@@ -46,3 +46,6 @@ Well, more like a granularity option, and we assume that register writes are imm
 DAC streams/chip RAM updates/special registers updates (like wavetables on Gameboy/N163) are to be isolated in special blocks and given a unique 16 or 32-bit identifier, and an opcode can reference those blocks by that index. This can be done in order for optimization program to be able to handle lots of different writes, storing each write only once (e.g. wavetable update on ES5503 is at least 256 bytes long, and if smb decides to use 4 sets of 256 packs of wavetables to simulate complex sound like C64 filtered waves or PWM VGM file will anyway be huge, but in the NuVGM we can store each wave only once, even if there are 1024 or more of them).
 
 A special block where chip outputs can be assigned to output channels (kinda like Furnace's Patchbay). This is for chips that have more than two output channels (ES5503/5505/5506, OPL3, etc.).
+
+## The format MUST support all the chips that are even vaguely sound chips
+This includes MOS Technology SID (both models, with customizable filter curve!), NES, etc. The format should not care if there is any other widespread existing format for the chip. If it chip-tunes, it gets added.
