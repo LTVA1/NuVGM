@@ -49,3 +49,42 @@ A special block where chip outputs can be assigned to output channels (kinda lik
 
 ## The format MUST support all the chips that are even vaguely sound chips
 This includes MOS Technology SID (both models, with customizable filter curve!), NES, etc. The format should not care if there is any other widespread existing format for the chip. If it chip-tunes, it gets added.
+
+# Preliminary spec
+
+| Field name | Field type | Field size (in bytes) | Comments |
+| ------------- | ------------- | ------------- | ------------- |
+| `nVGM` format magic | ASCII string | 4 bytes |  |
+| EOF pointer | `uint64_t` | 8 | (file_size - 8) |
+| Version | `uint64_t` | 8 | version |
+| GD3 offset  | `uint64_t` | 8 | relative; things like music engine Hz rate, song/album cover, author, etc. can be stored there idk |
+| Initial sample rate | `uint64_t` | 8 | may change throughout the file |
+| № of samples | `uint64_t` | 8 | total number of samples (sum of all wait commands) |
+| NuVGM data offset | `uint64_t` | 8 | realtive offset to the start of actual data (?? maybe unnecessary?) |
+
+Blocks of data follow.
+
+Block structure:
+| Field name | Field type | Field size (in bytes) | Comments |
+| ------------- | ------------- | ------------- | ------------- |
+| Block name | ASCII string  | 16 bytes |  |
+| Block size | `uint64_t` | 8 | size of the block (excluding this field and block name) |
+| Block data | binary data | Block size | whatever inside the block |
+
+Player must skip unknown blocks.
+
+## Defined blocks
+
+Header:
+
+RAM writes:
+
+ROM images (or parts of them; includes banks and whatever):
+
+Loop points:
+
+Main logged data block:
+
+## Opcodes
+
+In the main logged data block there is a stream of commands. Each command has an opcode as its first byte, then one or more bytes of data follow. Opcodes are described there:
