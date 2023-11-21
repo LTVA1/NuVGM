@@ -54,7 +54,7 @@ This includes MOS Technology SID (both models, with customizable filter curve!),
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| `nVGM` format magic | ASCII string | 4 bytes |  |
+| `nVGM` format magic | ASCII string | 4 |  |
 | EOF pointer | `uint64_t` | 8 | (file_size - 8) |
 | Version | `uint64_t` | 8 | version |
 | GD3 offset  | `uint64_t` | 8 | relative; things like music engine Hz rate, song/album cover, author, etc. can be stored there idk |
@@ -67,7 +67,7 @@ Blocks of data follow.
 Block structure:
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| Block name | ASCII string  | 16 bytes |  |
+| Block name | ASCII string  | 16 |  |
 | Block size | `uint64_t` | 8 | size of the block (excluding this field and block name) |
 | Block data | binary data | Block size | whatever inside the block |
 
