@@ -100,8 +100,7 @@ Then the array of chip settings follows, one per chip:
 | Size of additional parameters section | `uint32_t` | 4 |  |
 | Additional parameters section | binary data | Size of additional parameters section |  |
 
-The section can contain whatever chip needs, like output routing, filter curve and chip sub-model for MOS Technology SID etc. You can also store extended panning data here.
-Special opcode is provided to change some chip settings mid-song, so this field can contain an array of chip's configurations/settings (here settings that can't be changed by register writes are meant, like clock speed, final mixing volume etc.).
+The section can contain whatever chip needs, like output routing, filter curve and chip sub-model (revision) for MOS Technology SID etc. You can also store extended panning data here.
 
 ### RAM data
 
@@ -190,6 +189,30 @@ Then the array of sections follows:
 
 A special opcode is used for halting the playback (see below).
 
+### DAC stream
+
+Block name is `NuVGM DAC stream`
+
+| Field name | Field type | Field size (in bytes) | Comments |
+| ------------- | ------------- | ------------- | ------------- |
+| Number of DAC streams | `uint32_t` | 4 |  |
+
+Then the array of sections follows:
+
+| Field name | Field type | Field size (in bytes) | Comments |
+| ------------- | ------------- | ------------- | ------------- |
+| DAC stream total size | `uint32_t` | 4 |  |
+| DAC stream loop sections | `uint32_t` | 4 |  |
+
+The the array of specifying loop sections follows:
+
+| Field name | Field type | Field size (in bytes) | Comments |
+| ------------- | ------------- | ------------- | ------------- |
+| Loop begin offset | `uint32_t` | 4 |  |
+| Loop end offset | `uint32_t` | 4 |  |
+
+A special opcode is used for manipulating DAC streams (see below).
+
 ### Main logged data block
 
 Block name is `NuVGM loggeddata`
@@ -206,6 +229,8 @@ A special case is `aa...` operand. If written like this, it means that this fiel
 
 There are some shortened opcodes for chips with indices 0 to 7. These are introduced because they are expected to be the most common ones, and shaving one byte off them can noticeably reduce file size.
 
+Player must halt playback if it encounters an unknown opcode. Player may throw a warning/error message upon encountering it.
+
 Opcodes are described there:
 
 | Opcode | Operands | Description |
@@ -214,7 +239,7 @@ Opcodes are described there:
 | `0x02` | `dddddddd bbbbbbbb` | Write ROM data block `dddddddd` to ROM `bbbbbbbb` (used so on the init phase we can fill ROM with only the required data instead of storing the whole ROM image) |
 | `0x03` | `cc... bbbbbbbb` | Assign RAM "unit" `bbbbbbbb` to chip `cc...` |
 | `0x04` | `dddddddd bbbbbbbb` | Write RAM data block `dddddddd` to RAM "unit" `bbbbbbbb` |
-| `0x05` | `tttttttt` | Wait `tttttttt` samples (e.g. sample rate in the header is 44100 Hz so `05 dc ba 00 00` means `wait for approx. 1002.706 ms`; remember that mutlibyte values are stored little-endian) |
+| `0x05` | `tt...` | Wait `tt...` samples |
 | `0x10` | `cc... aa dd` | Write data `dd` to register with address `aa` of chip `cc...` |
 | `0x11` | `aa dd` | Write data `dd` to register with address `aa` of chip `0` |
 | `0x12` | `aa dd` | Write data `dd` to register with address `aa` of chip `1` |
@@ -261,4 +286,53 @@ Opcodes are described there:
 | `...` | `...` | `...` |
 | `0x98` | `aaaaaaaa dddddddd` | Write data `dddddddd` to register with address `aaaaaaaa` of chip `7` |
 | `0xan` |  | wait `n+1` samples, `n` can range from 0 to 15 |
+| `0xb0` |  | DAC stream manipulation (see below) |
+
+### DAC stream control
+
+This opcode defines a set of sub-commands for controlling the DAC stream.
+
+Pattern: `B0 [sub-command] [sub-command params]`.
+
+Setup stream control:
+````
+B0 01 ss ss ss ss cc... aa aa aa aa dd dd dd dd
+````
+`ss ss ss ss` is stream number, `cc...` is chip, `aa aa aa aa` is address and `dd dd dd dd` is the data you put there. This usually puts some chip channel into PCM mode or whatever. Special values may be used if extra action is needed to prepare the chip to DAC stream.
+
+Set stream data:
+````
+B0 02 ss ss ss ss ii ii ii ii ll oo oo oo oo
+````
+`ss ss ss ss` is stream number (not the number which is index in DAC stream block! it is like this so you can do e.g. interleaved writes from the same data section), `ii ii ii ii` is DAC writes block index, `ll` is step (1 if you just go byte by byte, 2 if you skip every other byte etc.), `oo oo oo oo` is an offset in the DAC write array from which playback will start.
+
+Set stream frequency:
+````
+B0 03 ss ss ss ss ff ff ff ff
+````
+`ss ss ss ss` is stream number, `ff ff ff ff` is frequency in Hz with which writes are happening.
+
+Start stream:
+````
+B0 04 ss ss ss ss cc
+````
+`ss ss ss ss` is stream number, `cc` is control flags:
+````
+(bit 0 is LSB, bit 7 is MSB)
+bit 0 - if we ignore loop points
+bit 1 - loop (loop points not valid here)
+bit 2 - ping-pong loop (loop points not valid here)
+bit 3 - play in reverse (loop points not valid here)
+````
+
+Stop stream:
+````
+B4 05 ss ss ss ss
+````
+`ss ss ss ss` is stream number.
+
+Other opcodes:
+
+| Opcode | Operands | Description |
+| ------------- | ------------- | ------------- |
 | `0xff` |  | Halt (stop) playback |
