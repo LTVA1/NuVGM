@@ -54,6 +54,8 @@ This includes MOS Technology SID (both models, with customizable filter curve!),
 
 All multibyte variables are stored little-endian, so `0x12345678` is written in file as `0x78 0x56 0x34 0x12`.
 
+The file may have optional zlib compression.
+
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
 | `nVGM` format magic | ASCII string | 4 |  |
