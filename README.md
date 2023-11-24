@@ -189,20 +189,20 @@ Then the array of sections follows:
 
 A special opcode is used for halting the playback (see below).
 
-### DAC stream
+### PCM stream
 
-Block name is `NDAC`
+Block name is `NPCM`
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| Number of DAC streams | `uint32_t` | 4 |  |
+| Number of PCM streams | `uint32_t` | 4 |  |
 
 Then the array of sections follows:
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| DAC stream total size | `uint32_t` | 4 |  |
-| DAC stream loop sections | `uint32_t` | 4 |  |
+| PCM stream total size | `uint32_t` | 4 |  |
+| PCM stream loop sections | `uint32_t` | 4 |  |
 
 The the array of specifying loop sections follows:
 
@@ -211,7 +211,7 @@ The the array of specifying loop sections follows:
 | Loop begin absolute offset | `uint32_t` | 4 |  |
 | Loop end absolute offset | `uint32_t` | 4 |  |
 
-A special opcode is used for manipulating DAC streams (see below).
+A special opcode is used for manipulating PCM streams (see below).
 
 ### Main logged data block
 
