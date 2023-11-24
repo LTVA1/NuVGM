@@ -345,7 +345,7 @@ B4 07 ss ss ll ll ll ll
 
 Set stream loop mode:
 ````
-B4 07 ss ss mm
+B4 08 ss ss mm
 ````
 `ss ss` is stream number, `ll ll ll ll` is loop mode:
 ````
