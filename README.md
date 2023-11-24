@@ -57,21 +57,21 @@ All multibyte variables are stored little-endian, so `0x12345678` is written in 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
 | `nVGM` format magic | ASCII string | 4 |  |
-| EOF pointer | `uint64_t` | 8 | `(file_size - 8)` |
-| Version | `uint64_t` | 8 | version |
-| GD3 offset  | `uint64_t` | 8 | relative; things like music engine Hz rate, song/album cover, author, jump table for playlist if all the OST is stored inside one file etc. can be stored there idk |
-| Initial sample rate | `uint64_t` | 8 | may change throughout the file |
-| № of samples | `uint64_t` | 8 | total number of samples (sum of all wait commands) |
-| NuVGM data offset | `uint64_t` | 8 | realtive offset to the start of actual data (?? maybe unnecessary?) |
+| EOF pointer | `uint32_t` | 4 | `(file_size - 8)` |
+| Version | `uint32_t` | 4 | version |
+| GD3 offset  | `uint32_t` | 4 | relative; things like music engine Hz rate, song/album cover, author, jump table for playlist if all the OST is stored inside one file etc. can be stored there idk |
+| № of samples | `uint32_t` | 4 | total number of samples (sum of all wait commands) |
+| File playback tick rate | `uint32_t` | 4 | For wait commands etc. |
+| NuVGM data offset | `uint32_t` | 4 | absolute offset to the start of actual data (?? maybe unnecessary?) |
 
 Blocks of data follow.
 
 Block structure:
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| Block name | ASCII string  | 16 |  |
-| Block version | `uint64_t` | 8 |  |
-| Block size | `uint64_t` | 8 | size of the block (excluding this field, block name and block version, so `(block_size - 32)`) |
+| Block name | ASCII string  | 4 |  |
+| Block version | `uint32_t` | 4 |  |
+| Block size | `uint32_t` | 4 | size of the block (excluding this field, block name and block version, so `(block_size - 32)`) |
 | Block data | binary data | Block size | whatever inside the block |
 
 Player must skip unknown blocks.
@@ -82,7 +82,7 @@ Here the block data of main blocks is described.
 
 ### Header
 
-Block name is `NuVGM fileheader`
+Block name is `FHDR`
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
@@ -94,7 +94,7 @@ Then the array of chip settings follows, one per chip:
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
 | Volume | `float` | 4 |  |
-| Panning | `uint16_t` | 2 | `0x0000` = left, `0x8000` and `0x7fff` = center, `0xffff` = right |
+| Panning | `float` | 4 | `-1.0` = left, `0` = center, `1.0` = right |
 | Clock | `uint32_t` | 4 |  |
 | Version of additional parameters section | `uint32_t` | 4 |  |
 | Size of additional parameters section | `uint32_t` | 4 |  |
@@ -104,7 +104,7 @@ The section can contain whatever chip needs, like output routing, filter curve a
 
 ### RAM data
 
-Block name is `NuVGM RAM data  `
+Block name is `NRAM`
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
@@ -139,7 +139,7 @@ Special values of data/compression type may be reserved to signal that the range
 
 ### ROM images (or parts of them; includes banks and whatever)
 
-Block name is `NuVGM ROM data  `
+Block name is `NROM`
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
@@ -174,7 +174,7 @@ Special values of data/compression type may be reserved to signal that the range
 
 ### Loop points
 
-Block name is `NuVGM looppoints`
+Block name is `NLPS`
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
@@ -184,14 +184,14 @@ Then the array of sections follows:
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| Loop begin absolute offset | `uint64_t` | 8 |  |
-| Loop end absolute offset | `uint64_t` | 8 |  |
+| Loop begin absolute offset | `uint32_t` | 4 |  |
+| Loop end absolute offset | `uint32_t` | 4 |  |
 
 A special opcode is used for halting the playback (see below).
 
 ### DAC stream
 
-Block name is `NuVGM DAC stream`
+Block name is `NDAC`
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
@@ -208,14 +208,14 @@ The the array of specifying loop sections follows:
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| Loop begin offset | `uint32_t` | 4 |  |
-| Loop end offset | `uint32_t` | 4 |  |
+| Loop begin absolute offset | `uint32_t` | 4 |  |
+| Loop end absolute offset | `uint32_t` | 4 |  |
 
 A special opcode is used for manipulating DAC streams (see below).
 
 ### Main logged data block
 
-Block name is `NuVGM loggeddata`
+Block name is `NLGD`
 
 The block contains data in form of opcodes and their operands stream, much like the VGM.
 
@@ -296,27 +296,27 @@ Pattern: `B0 [sub-command] [sub-command params]`.
 
 Setup stream control:
 ````
-B0 01 ss ss ss ss cc... aa aa aa aa dd dd dd dd
+B0 01 ss ss cc... aa aa aa aa dd dd dd dd
 ````
-`ss ss ss ss` is stream number, `cc...` is chip, `aa aa aa aa` is address and `dd dd dd dd` is the data you put there. This usually puts some chip channel into PCM mode or whatever. Special values may be used if extra action is needed to prepare the chip to DAC stream.
+`ss ss` is stream number, `cc...` is chip, `aa aa aa aa` is address and `dd dd dd dd` is the data you put there. This usually puts some chip channel into PCM mode or whatever. Special values may be used if extra action is needed to prepare the chip to DAC stream.
 
 Set stream data:
 ````
-B0 02 ss ss ss ss ii ii ii ii ll oo oo oo oo
+B0 02 ss ss ii ii ii ii ll oo oo oo oo
 ````
-`ss ss ss ss` is stream number (not the number which is index in DAC stream block! it is like this so you can do e.g. interleaved writes from the same data section), `ii ii ii ii` is DAC writes block index, `ll` is step (1 if you just go byte by byte, 2 if you skip every other byte etc.), `oo oo oo oo` is an offset in the DAC write array from which playback will start.
+`ss ss` is stream number (not the number which is index in DAC stream block! it is like this so you can do e.g. interleaved writes from the same data section), `ii ii ii ii` is DAC writes block index, `ll` is step (1 if you just go byte by byte, 2 if you skip every other byte etc.), `oo oo oo oo` is an offset in the DAC write array from which playback will start.
 
 Set stream frequency:
 ````
-B0 03 ss ss ss ss ff ff ff ff
+B0 03 ss ss ff ff ff ff
 ````
-`ss ss ss ss` is stream number, `ff ff ff ff` is frequency in Hz with which writes are happening.
+`ss ss` is stream number, `ff ff ff ff` is frequency in Hz with which writes are happening.
 
 Start stream:
 ````
-B0 04 ss ss ss ss cc
+B0 04 ss ss cc
 ````
-`ss ss ss ss` is stream number, `cc` is control flags:
+`ss ss` is stream number, `cc` is control flags:
 ````
 (bit 0 is LSB, bit 7 is MSB)
 bit 0 - if we ignore loop points
@@ -327,9 +327,9 @@ bit 3 - play in reverse (loop points not valid here)
 
 Stop stream:
 ````
-B4 05 ss ss ss ss
+B4 05 ss ss
 ````
-`ss ss ss ss` is stream number.
+`ss ss` is stream number.
 
 Other opcodes:
 
