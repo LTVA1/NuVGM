@@ -331,6 +331,29 @@ B4 05 ss ss
 ````
 `ss ss` is stream number.
 
+Set stream loop begin:
+````
+B4 06 ss ss ll ll ll ll
+````
+`ss ss` is stream number, `ll ll ll ll` is loop begin offset
+
+Set stream loop end:
+````
+B4 07 ss ss ll ll ll ll
+````
+`ss ss` is stream number, `ll ll ll ll` is loop end offset
+
+Set stream loop mode:
+````
+B4 07 ss ss mm
+````
+`ss ss` is stream number, `ll ll ll ll` is loop mode:
+````
+0 = no loop
+1 = normal loop
+2 = ping-pong loop
+````
+
 Other opcodes:
 
 | Opcode | Operands | Description |
