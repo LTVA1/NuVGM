@@ -327,25 +327,25 @@ bit 3 - play in reverse (loop points not valid here)
 
 Stop stream:
 ````
-B4 05 ss ss
+B0 05 ss ss
 ````
 `ss ss` is stream number.
 
 Set stream loop begin:
 ````
-B4 06 ss ss ll ll ll ll
+B0 06 ss ss ll ll ll ll
 ````
 `ss ss` is stream number, `ll ll ll ll` is loop begin offset
 
 Set stream loop end:
 ````
-B4 07 ss ss ll ll ll ll
+B0 07 ss ss ll ll ll ll
 ````
 `ss ss` is stream number, `ll ll ll ll` is loop end offset
 
 Set stream loop mode:
 ````
-B4 08 ss ss mm
+B0 08 ss ss mm
 ````
 `ss ss` is stream number, `ll ll ll ll` is loop mode:
 ````
