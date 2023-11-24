@@ -18,7 +18,7 @@ my proposal for a successor to VGM (i'd call it NuVGM (thanks Iyatemu for the na
 - data blocks are chip-independent
 - an "assign ROM data" command to bind a ROM to a chip, like so: `50 xx yyyy zz` (where xx is the chip index, yyyy is the data block and zz is the ROM type (for chips which can be assigned more than one, e.g. YM2610))
   - this also allows for some degree of bank switching (to be discussed further)
-- DAC streams can use any data block, write to any address and allow for loop points
+- PCM streams can use any data block, write to any address and allow for loop points
 - an extensible, backward and forward compatible tag format like ID3v2 (should we call it GD3v2?)
   - tag data is UTF-8 (enough of Windows-specific UTF-16)
 
@@ -43,7 +43,7 @@ a "logging rate" field
 ````
 Well, more like a granularity option, and we assume that register writes are immediate (so any number of those takes exactly 0 time). Special commands may be used if we really want to rely on the delays.
 
-DAC streams/chip RAM updates/special registers updates (like wavetables on Gameboy/N163) are to be isolated in special blocks and given a unique 16 or 32-bit identifier, and an opcode can reference those blocks by that index. This can be done in order for optimization program to be able to handle lots of different writes, storing each write only once (e.g. wavetable update on ES5503 is at least 256 bytes long, and if smb decides to use 4 sets of 256 packs of wavetables to simulate complex sound like C64 filtered waves or PWM VGM file will anyway be huge, but in the NuVGM we can store each wave only once, even if there are 1024 or more of them).
+PCM streams/chip RAM updates/special registers updates (like wavetables on Gameboy/N163) are to be isolated in special blocks and given a unique 16 or 32-bit identifier, and an opcode can reference those blocks by that index. This can be done in order for optimization program to be able to handle lots of different writes, storing each write only once (e.g. wavetable update on ES5503 is at least 256 bytes long, and if smb decides to use 4 sets of 256 packs of wavetables to simulate complex sound like C64 filtered waves or PWM VGM file will anyway be huge, but in the NuVGM we can store each wave only once, even if there are 1024 or more of them).
 
 A special block where chip outputs can be assigned to output channels (kinda like Furnace's Patchbay). This is for chips that have more than two output channels (ES5503/5505/5506, OPL3, etc.). The player itself supports up to 256 audio channels, `0xff` being the NULL channel.
 
@@ -286,11 +286,11 @@ Opcodes are described there:
 | `...` | `...` | `...` |
 | `0x98` | `aaaaaaaa dddddddd` | Write data `dddddddd` to register with address `aaaaaaaa` of chip `7` |
 | `0xan` |  | wait `n+1` samples, `n` can range from 0 to 15 |
-| `0xb0` |  | DAC stream manipulation (see below) |
+| `0xb0` |  | PCM stream manipulation (see below) |
 
-### DAC stream control
+### PCM stream control
 
-This opcode defines a set of sub-commands for controlling the DAC stream.
+This opcode defines a set of sub-commands for controlling the PCM stream.
 
 Pattern: `B0 [sub-command] [sub-command params]`.
 
@@ -298,13 +298,13 @@ Setup stream control:
 ````
 B0 01 ss ss cc... aa aa aa aa dd dd dd dd
 ````
-`ss ss` is stream number, `cc...` is chip, `aa aa aa aa` is address and `dd dd dd dd` is the data you put there. This usually puts some chip channel into PCM mode or whatever. Special values may be used if extra action is needed to prepare the chip to DAC stream.
+`ss ss` is stream number, `cc...` is chip, `aa aa aa aa` is address and `dd dd dd dd` is the data you put there. This usually puts some chip channel into PCM mode or whatever. Special values may be used if extra action is needed to prepare the chip to PCM stream.
 
 Set stream data:
 ````
 B0 02 ss ss ii ii ii ii ll oo oo oo oo
 ````
-`ss ss` is stream number (not the number which is index in DAC stream block! it is like this so you can do e.g. interleaved writes from the same data section), `ii ii ii ii` is DAC writes block index, `ll` is step (1 if you just go byte by byte, 2 if you skip every other byte etc.), `oo oo oo oo` is an offset in the DAC write array from which playback will start.
+`ss ss` is stream number (not the number which is index in PCM stream block! it is like this so you can do e.g. interleaved writes from the same data section), `ii ii ii ii` is PCM writes block index, `ll` is step (1 if you just go byte by byte, 2 if you skip every other byte etc.), `oo oo oo oo` is an offset in the PCM write array from which playback will start.
 
 Set stream frequency:
 ````
