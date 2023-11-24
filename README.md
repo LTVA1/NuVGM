@@ -71,7 +71,7 @@ Block structure:
 | ------------- | ------------- | ------------- | ------------- |
 | Block name | ASCII string  | 4 |  |
 | Block version | `uint32_t` | 4 |  |
-| Block size | `uint32_t` | 4 | size of the block (excluding this field, block name and block version, so `(block_size - 32)`) |
+| Block size | `uint32_t` | 4 | size of the block (excluding this field, block name and block version, so `(block_size - 12)`) |
 | Block data | binary data | Block size | whatever inside the block |
 
 Player must skip unknown blocks.
