@@ -61,7 +61,7 @@ The file may have optional zlib compression.
 | `nVGM` format magic | ASCII string | 4 |  |
 | EOF pointer | `uint32_t` | 4 | `(file_size - 8)` |
 | Version | `uint32_t` | 4 | version |
-| GD3 offset  | `uint32_t` | 4 | relative; things like music engine Hz rate, song/album cover, author, jump table for playlist if all the OST is stored inside one file etc. can be stored there idk |
+| GD3 absolute offset  | `uint32_t` | 4 | things like music engine Hz rate, song/album cover, author, jump table for playlist if all the OST is stored inside one file etc. can be stored there idk |
 | № of samples | `uint32_t` | 4 | total number of samples (sum of all wait commands) |
 | File playback tick rate | `uint32_t` | 4 | For wait commands etc. |
 | NuVGM data offset | `uint32_t` | 4 | absolute offset to the start of actual data |
