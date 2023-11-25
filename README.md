@@ -148,15 +148,13 @@ Block name is `NPCM`
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| Number of PCM streams | `uint32_t` | 4 |  |
+| Number of PCM streams | `uint16_t` | 2 |  |
 
 Then the array of sections follows:
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
 | PCM stream total size | `uint32_t` | 4 |  |
-| Loop begin absolute offset | `uint32_t` | 4 |  |
-| Loop end absolute offset | `uint32_t` | 4 |  |
 | Flags | `uint8_t` | 1 | See below: |
 
 ````
@@ -237,7 +235,7 @@ Opcodes are described there:
 | `0x91` | `aaaaaaaa dddddddd` | Write data `dddddddd` to register with address `aaaaaaaa` of chip `1` |
 | `...` | `...` | `...` |
 | `0x98` | `cc... aaaaaaaa dddddddd` | Write data `dddddddd` to register with address `aaaaaaaa` of chip `cc...` |
-| `0xan` |  | wait `n+1` samples, `n` can range from 0 to 15 |
+| `0xan` |  | wait `n+1` ticks, `n` can range from 0 to 15 |
 | `0xb0` |  | PCM stream manipulation (see below) |
 
 ### PCM stream control
@@ -246,17 +244,17 @@ This opcode defines a set of sub-commands for controlling the PCM stream.
 
 Pattern: `B0 [sub-command] [sub-command params]`.
 
-Setup stream control:
+Setup stream:
 ````
-B0 01 ss ss cc... aa aa aa aa dd dd dd dd
+B0 01 ss ss cc... aa aa aa aa
 ````
-`ss ss` is stream number, `cc...` is chip, `aa aa aa aa` is address and `dd dd dd dd` is the data you put there. This usually puts some chip channel into PCM mode or whatever. Special values may be used if extra action is needed to prepare the chip to PCM stream.
+`ss ss` is stream number, `cc...` is chip number and `aa aa aa aa` is register address into which samples are streamed.
 
-Set stream data:
+Set stream data entry:
 ````
-B0 02 ss ss ii ii ii ii ll oo oo oo oo
+B0 02 ss ss ii ii
 ````
-`ss ss` is stream number, `ii ii ii ii` is PCM writes block index, `ll` is step (1 if you just go byte by byte, 2 if you skip every other byte etc.), `oo oo oo oo` is an offset in the PCM write array from which playback will start (useful for e.g. Sega song made in Furnace which uses sample offset effect).
+`ss ss` is stream number, `ii ii` is PCM writes block entry index (which actually may contain multiple samples).
 
 Set stream frequency:
 ````
@@ -264,49 +262,48 @@ B0 03 ss ss ff ff ff ff
 ````
 `ss ss` is stream number, `ff ff ff ff` is frequency in Hz with which writes are happening.
 
-Start stream:
+Set stream start offset:
 ````
-B0 04 ss ss cc ll ll ll ll
+B0 04 ss ss oo oo oo oo
 ````
-`ss ss` is stream number, `cc` is control flags:
+`ss ss` is stream number, `oo oo oo oo` is start offset in PCM writes block entry.
+
+Set stream data length:
+````
+B0 05 ss ss ll ll ll ll
+````
+`ss ss` is stream number, `ll ll ll ll` is data length in PCM writes block entry (the start of data is start offset specified in the previous command). If length is `0` we play the whole same, from start offset to the end of the PCM writes block entry.
+
+Set stream loop/playback mode:
+````
+B0 06 ss ss ll
+````
+`ss ss` is stream number, `ll` is loop mode:
 ````
 (bit 0 is LSB, bit 7 is MSB)
-bit 0 - if we ignore loop points
-bit 1 - if we loop from beginning to end (loop points not valid here; if bit is clear, no looping is happening)
+bit 0 - no loop
+bit 1 - normal loop
 bit 2 - ping-pong loop
-bit 3 - play in reverse (loop points not valid here)
+bit 3 - play in reverse
 ````
-`ll ll ll ll` is length of data to be played. Typically it may be equal to the size of PCM writes block entry (e.g. when we export from Furnace tracker we know individual samples). However, in case of logging emulator output, we don't know the size of each sample reliably, so we can declare one very big PCM writes block entry and reference parts of it using length in this command and offset in "set stream data" command.
 
-Stop stream:
-````
-B0 05 ss ss
-````
-`ss ss` is stream number.
-
-Set stream loop begin:
-````
-B0 06 ss ss ll ll ll ll
-````
-`ss ss` is stream number, `ll ll ll ll` is loop begin offset
-
-Set stream loop end:
+Set stream loop point:
 ````
 B0 07 ss ss ll ll ll ll
 ````
-`ss ss` is stream number, `ll ll ll ll` is loop end offset
+`ss ss` is stream number, `ll ll ll ll` is loop point relative to PCM writes block entry data start.
 
-Set stream loop mode:
+Start stream:
 ````
-B0 08 ss ss mm
+B0 08 ss ss
 ````
-`ss ss` is stream number, `ll ll ll ll` is loop mode:
+`ss ss` is stream number.
+
+Stop stream:
 ````
-(bit 0 is LSB, bit 7 is MSB)
-0 = no loop
-1 = normal loop
-2 = ping-pong loop
+B0 09 ss ss
 ````
+`ss ss` is stream number.
 
 Other opcodes:
 
