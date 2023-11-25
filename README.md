@@ -266,7 +266,7 @@ B0 03 ss ss ff ff ff ff
 
 Start stream:
 ````
-B0 04 ss ss cc
+B0 04 ss ss cc ll ll ll ll
 ````
 `ss ss` is stream number, `cc` is control flags:
 ````
@@ -276,6 +276,7 @@ bit 1 - if we loop from beginning to end (loop points not valid here; if bit is 
 bit 2 - ping-pong loop
 bit 3 - play in reverse (loop points not valid here)
 ````
+`ll ll ll ll` is length of data to be played. Typically it may be equal to the size of PCM writes block entry (e.g. when we export from Furnace tracker we know individual samples). However, in case of logging emulator output, we don't know the size of each sample reliably, so we can declare one very big PCM writes block entry and reference parts of it using length in this command and offset in "set stream data" command.
 
 Stop stream:
 ````
