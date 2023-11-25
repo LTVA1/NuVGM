@@ -119,9 +119,9 @@ Then the array of these "units" settings follows:
 | Additional data length | `uint32_t` | 4 |  |
 | Data | binary data | Additional data length | Whatever info is needed (e.g. initial byte value to fill the memory with) |
 
-The index of the entry in these arrays is used in data stream to reference it, so player must build up some kind of LUT when scanning the file to make it possible.
+The index of the entry in these arrays is used in data stream to reference it.
 
-RAM/ROM units have fixed indices for each chip type. For example, "YM2610 ADPCM-A" = unit value 0 and "YM2610 ADPCM-B" = unit value 1, "OKI6295 ROM" = unit value 0 (thanks @ValleyBell!).
+RAM/ROM units would have fixed indices for each chip type. For example, "YM2610 ADPCM-A" = unit value 0 and "YM2610 ADPCM-B" = unit value 1, "OKI6295 ROM" = unit value 0 (thanks @ValleyBell!).
 
 ### RAM/ROM data
 
@@ -198,7 +198,7 @@ Opcodes are described there:
 | Opcode | Operands | Description |
 | ------------- | ------------- | ------------- |
 | `0x00` |  | NOP. Do nothing and immeditely go to next opcode |
-| `0x01` | `dddddddd bb cc..` | Write data block `dddddddd` to ROM/RAM "unit" `bb` of chip `cc..` (for ROOM it is used on the init phase so we can fill ROM with only the required data instead of storing the whole ROM image) |
+| `0x01` | `dddddddd bb cc.. oooooooo` | Write data block `dddddddd` to ROM/RAM "unit" `bb` of chip `cc..` with starting offset `oooooooo` (for ROM it is used on the init phase so we can fill ROM with only the required data instead of storing the whole ROM image) |
 | `0x02` | `tt...` | Wait `tt...` samples |
 | `0x10` | `aa dd` | Write data `dd` to register with address `aa` of chip `0` |
 | `0x11` | `aa dd` | Write data `dd` to register with address `aa` of chip `1` |
@@ -255,7 +255,7 @@ Set stream data:
 ````
 B0 02 ss ss ii ii ii ii ll oo oo oo oo
 ````
-`ss ss` is stream number, `ii ii ii ii` is PCM writes block index, `ll` is step (1 if you just go byte by byte, 2 if you skip every other byte etc.), `oo oo oo oo` is an offset in the PCM write array from which playback will start.
+`ss ss` is stream number, `ii ii ii ii` is PCM writes block index, `ll` is step (1 if you just go byte by byte, 2 if you skip every other byte etc.), `oo oo oo oo` is an offset in the PCM write array from which playback will start (useful for e.g. Sega song made in Furnace which uses sample offset effect).
 
 Set stream frequency:
 ````
