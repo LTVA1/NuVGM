@@ -88,108 +88,59 @@ Block name is `FHDR`
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| Chip list size | `uint32_t`  | 4 |  |
-| Chip list | `uint16_t` array  | 2 * Chip list size | Each chip type has 16-bit signature. There can be unlimited amount of chips of the same type, but settings are individual per chip. |
+| Chip count | `uint32_t`  | 4 |  |
 
 Then the array of chip settings follows, one per chip:
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
+| Total size of this chip's settings | `uint32_t` | 4 |  |
+| Chip ID | `uint16_t` | 2 | Each chip type has a unique 16-bit signature. There can be unlimited amount of chips of the same type, but settings are individual per chip. |
 | Volume | `float` | 4 |  |
 | Panning | `float` | 4 | `-1.0` = left, `0` = center, `1.0` = right |
 | Clock | `uint32_t` | 4 |  |
-| Version of additional parameters section | `uint32_t` | 4 |  |
 | Size of additional parameters section | `uint32_t` | 4 |  |
 | Additional parameters section | binary data | Size of additional parameters section |  |
 
 The section can contain whatever chip needs, like output routing, filter curve and chip sub-model (revision) for MOS Technology SID etc. You can also store extended panning data here.
+Section may use the same block structure inside of itself.
 
-### RAM data
-
-Block name is `NRAM`
-
-| Field name | Field type | Field size (in bytes) | Comments |
-| ------------- | ------------- | ------------- | ------------- |
-| Number of RAM write sections | `uint32_t` | 4 |  |
-
-Then the array of sections follows:
+Then the chip settings continue:
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| RAM offset (including bank info) | `uint32_t` | 4 |  |
-| Size of the section | `uint32_t` | 4 |  |
-| Data type | `uint16_t` | 2 |  |
-| Compression type | `uint16_t` | 2 | compression is applied to the raw data which originally was in format described by the field above |
-| Data | binary data | Size of the section |  |
+| Number of RAM/ROM "units" | `uint8_t` | 1 |  |
 
-Then the declaration of RAM "units" follows. These can be assigned to different chips if it is supported by emulators.
+Then the array of these "units" settings follows:
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| Number of RAM "units" | `uint32_t` | 4 |  |
-
-Then the array of sections follows:
-
-| Field name | Field type | Field size (in bytes) | Comments |
-| ------------- | ------------- | ------------- | ------------- |
-| RAM "unit" size | `uint32_t` | 4 |  |
+| RAM/ROM "unit" size | `uint32_t` | 4 |  |
 | Additional data length | `uint32_t` | 4 |  |
 | Data | binary data | Additional data length | Whatever info is needed (e.g. initial byte value to fill the memory with) |
 
 The index of the entry in these arrays is used in data stream to reference it, so player must build up some kind of LUT when scanning the file to make it possible.
-Special values of data/compression type may be reserved to signal that the range of RAM must be filled with 0's or a particular byte/repeating byte sequence. In this case the actual data may be omitted.
 
-### ROM images (or parts of them; includes banks and whatever)
+RAM/ROM units have fixed indices for each chip type. For example, "YM2610 ADPCM-A" = unit value 0 and "YM2610 ADPCM-B" = unit value 1, "OKI6295 ROM" = unit value 0 (thanks @ValleyBell!).
 
-Block name is `NROM`
+### RAM/ROM data
+
+Block name is `ROAM`
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| Number of ROM sections/ROMs | `uint32_t` | 4 |  |
+| Number of RAM/ROM write sections | `uint32_t` | 4 |  |
 
 Then the array of sections follows:
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| ROM offset (including bank info) | `uint32_t` | 4 |  |
 | Size of the section | `uint32_t` | 4 |  |
 | Data type | `uint16_t` | 2 |  |
 | Compression type | `uint16_t` | 2 | compression is applied to the raw data which originally was in format described by the field above |
 | Data | binary data | Size of the section |  |
 
-Then the declaration of ROM "units" follows. These can be assigned to different chips if it is supported by emulators.
-
-| Field name | Field type | Field size (in bytes) | Comments |
-| ------------- | ------------- | ------------- | ------------- |
-| Number of ROM "units" | `uint32_t` | 4 |  |
-
-Then the array of sections follows:
-
-| Field name | Field type | Field size (in bytes) | Comments |
-| ------------- | ------------- | ------------- | ------------- |
-| ROM "unit" size | `uint32_t` | 4 |  |
-| Additional data length | `uint32_t` | 4 |  |
-| Data | binary data | Additional data length | Whatever info is needed (e.g. initial byte value to fill the memory with) |
-
-The index of the entry in these arrays is used in data stream to reference it, so player must build up some kind of LUT when scanning the file to make it possible to assign different ROMs to different chips.
-Special values of data/compression type may be reserved to signal that the range of ROM must be filled with 0's or a particular byte/repeating byte sequence. In this case the actual data may be omitted.
-
-### Loop points
-
-Block name is `NLPS`
-
-| Field name | Field type | Field size (in bytes) | Comments |
-| ------------- | ------------- | ------------- | ------------- |
-| Number of loop points | `uint32_t` | 4 |  |
-
-Then the array of sections follows:
-
-| Field name | Field type | Field size (in bytes) | Comments |
-| ------------- | ------------- | ------------- | ------------- |
-| Loop begin absolute offset | `uint32_t` | 4 |  |
-| Loop end absolute offset | `uint32_t` | 4 |  |
-
-A special opcode is used for halting the playback (see below).
+Special values of data/compression type may be reserved to signal that the range of RAM/ROM must be filled with 0's or a particular byte/repeating byte sequence. In this case the actual data may be omitted.
 
 ### PCM stream
 
@@ -204,14 +155,23 @@ Then the array of sections follows:
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
 | PCM stream total size | `uint32_t` | 4 |  |
-| PCM stream loop sections | `uint32_t` | 4 |  |
+| Loop begin absolute offset | `uint32_t` | 4 |  |
+| Loop end absolute offset | `uint32_t` | 4 |  |
+| Flags | `uint8_t` | 1 | See below: |
 
-The the array of specifying loop sections follows:
+````
+(bit 0 is LSB, bit 7 is MSB)
+bit 0 - if we ignore loop points (loop just from beginning to end)
+bit 1 - enable/disable loop
+bit 2 - ping-pong loop
+bit 3 - play in reverse (loop points not valid here)
+````
 
 | Field name | Field type | Field size (in bytes) | Comments |
 | ------------- | ------------- | ------------- | ------------- |
-| Loop begin absolute offset | `uint32_t` | 4 |  |
-| Loop end absolute offset | `uint32_t` | 4 |  |
+| Data type | `uint16_t` | 2 |  |
+| Compression type | `uint16_t` | 2 | compression is applied to the raw data which originally was in format described by the field above |
+| Data | binary data | Size of the section |  |
 
 A special opcode is used for manipulating PCM streams (see below).
 
@@ -237,56 +197,45 @@ Opcodes are described there:
 
 | Opcode | Operands | Description |
 | ------------- | ------------- | ------------- |
-| `0x01` | `cc... bbbbbbbb` | Assign ROM `bbbbbbbb` to chip `cc...` |
-| `0x02` | `dddddddd bbbbbbbb` | Write ROM data block `dddddddd` to ROM `bbbbbbbb` (used so on the init phase we can fill ROM with only the required data instead of storing the whole ROM image) |
-| `0x03` | `cc... bbbbbbbb` | Assign RAM "unit" `bbbbbbbb` to chip `cc...` |
-| `0x04` | `dddddddd bbbbbbbb` | Write RAM data block `dddddddd` to RAM "unit" `bbbbbbbb` |
-| `0x05` | `tt...` | Wait `tt...` samples |
-| `0x10` | `cc... aa dd` | Write data `dd` to register with address `aa` of chip `cc...` |
-| `0x11` | `aa dd` | Write data `dd` to register with address `aa` of chip `0` |
-| `0x12` | `aa dd` | Write data `dd` to register with address `aa` of chip `1` |
+| `0x00` |  | NOP. Do nothing and immeditely go to next opcode |
+| `0x01` | `dddddddd bb cc..` | Write data block `dddddddd` to ROM/RAM "unit" `bb` of chip `cc..` (for ROOM it is used on the init phase so we can fill ROM with only the required data instead of storing the whole ROM image) |
+| `0x02` | `tt...` | Wait `tt...` samples |
+| `0x10` | `aa dd` | Write data `dd` to register with address `aa` of chip `0` |
+| `0x11` | `aa dd` | Write data `dd` to register with address `aa` of chip `1` |
 | `...` | `...` | `...` |
-| `0x18` | `aa dd` | Write data `dd` to register with address `aa` of chip `7` |
-| `0x20` | `cc... aa dddd` | Write data `dddd` to register with address `aa` of chip `cc...` |
-| `0x21` | `aa dddd` | Write data `dddd` to register with address `aa` of chip `0` |
-| `0x22` | `aa dddd` | Write data `dddd` to register with address `aa` of chip `1` |
+| `0x18` | `cc... aa dd` | Write data `dd` to register with address `aa` of chip `cc..` |
+| `0x20` | `aa dddd` | Write data `dddd` to register with address `aa` of chip `0` |
+| `0x21` | `aa dddd` | Write data `dddd` to register with address `aa` of chip `1` |
 | `...` | `...` | `...` |
-| `0x28` | `aa dddd` | Write data `dddd` to register with address `aa` of chip `7` |
-| `0x30` | `cc... aa dddddddd` | Write data `dddddddd` to register with address `aa` of chip `cc...` |
-| `0x31` | `aa dddddddd` | Write data `dddddddd` to register with address `aa` of chip `0` |
-| `0x32` | `aa dddddddd` | Write data `dddddddd` to register with address `aa` of chip `1` |
+| `0x28` | `cc... aa dddd` | Write data `dddd` to register with address `aa` of chip `cc...` |
+| `0x30` | `aa dddddddd` | Write data `dddddddd` to register with address `aa` of chip `0` |
+| `0x31` | `aa dddddddd` | Write data `dddddddd` to register with address `aa` of chip `1` |
 | `...` | `...` | `...` |
-| `0x38` | `aa dddddddd` | Write data `dddddddd` to register with address `aa` of chip `7` |
-| `0x40` | `cc... aaaa dd` | Write data `dd` to register with address `aaaa` of chip `cc...` |
-| `0x41` | `aaaa dd` | Write data `dd` to register with address `aaaa` of chip `0` |
-| `0x42` | `aaaa dd` | Write data `dd` to register with address `aaaa` of chip `1` |
+| `0x38` | `cc... aa dddddddd` | Write data `dddddddd` to register with address `aa` of chip `cc...` |
+| `0x40` | `aaaa dd` | Write data `dd` to register with address `aaaa` of chip `0` |
+| `0x41` | `aaaa dd` | Write data `dd` to register with address `aaaa` of chip `1` |
 | `...` | `...` | `...` |
-| `0x48` | `aaaa dd` | Write data `dd` to register with address `aaaa` of chip `7` |
-| `0x50` | `cc... aaaa dddd` | Write data `dddd` to register with address `aaaa` of chip `cc...` |
-| `0x51` | `aaaa dddd` | Write data `dddd` to register with address `aaaa` of chip `0` |
-| `0x52` | `aaaa dddd` | Write data `dddd` to register with address `aaaa` of chip `1` |
+| `0x48` | `cc... aaaa dd` | Write data `dd` to register with address `aaaa` of chip `cc...` |
+| `0x50` | `aaaa dddd` | Write data `dddd` to register with address `aaaa` of chip `0` |
+| `0x51` | `aaaa dddd` | Write data `dddd` to register with address `aaaa` of chip `1` |
 | `...` | `...` | `...` |
-| `0x58` | `aaaa dddd` | Write data `dddd` to register with address `aaaa` of chip `7` |
-| `0x60` | `cc... aaaa dddddddd` | Write data `dddddddd` to register with address `aaaa` of chip `cc...` |
-| `0x61` | `aaaa dddddddd` | Write data `dddddddd` to register with address `aaaa` of chip `0` |
-| `0x62` | `aaaa dddddddd` | Write data `dddddddd` to register with address `aaaa` of chip `1` |
+| `0x58` | `cc... aaaa dddd` | Write data `dddd` to register with address `aaaa` of chip `cc...` |
+| `0x60` | `aaaa dddddddd` | Write data `dddddddd` to register with address `aaaa` of chip `0` |
+| `0x61` | `aaaa dddddddd` | Write data `dddddddd` to register with address `aaaa` of chip `1` |
 | `...` | `...` | `...` |
-| `0x68` | `aaaa dddddddd` | Write data `dddddddd` to register with address `aaaa` of chip `7` |
-| `0x70` | `cc... aaaaaaaa dd` | Write data `dd` to register with address `aaaaaaaa` of chip `cc...` |
-| `0x71` | `aaaaaaaa dd` | Write data `dd` to register with address `aaaaaaaa` of chip `0` |
-| `0x72` | `aaaaaaaa dd` | Write data `dd` to register with address `aaaaaaaa` of chip `1` |
+| `0x68` | `cc... aaaa dddddddd` | Write data `dddddddd` to register with address `aaaa` of chip `cc...` |
+| `0x70` | `aaaaaaaa dd` | Write data `dd` to register with address `aaaaaaaa` of chip `0` |
+| `0x71` | `aaaaaaaa dd` | Write data `dd` to register with address `aaaaaaaa` of chip `1` |
 | `...` | `...` | `...` |
-| `0x78` | `aaaaaaaa dd` | Write data `dd` to register with address `aaaaaaaa` of chip `7` |
-| `0x80` | `cc... aaaaaaaa dddd` | Write data `dddd` to register with address `aaaaaaaa` of chip `cc...` |
-| `0x81` | `aaaaaaaa dddd` | Write data `dddd` to register with address `aaaaaaaa` of chip `0` |
-| `0x82` | `aaaaaaaa dddd` | Write data `dddd` to register with address `aaaaaaaa` of chip `1` |
+| `0x78` | `cc... aaaaaaaa dd` | Write data `dd` to register with address `aaaaaaaa` of chip `cc...` |
+| `0x80` | `aaaaaaaa dddd` | Write data `dddd` to register with address `aaaaaaaa` of chip `0` |
+| `0x81` | `aaaaaaaa dddd` | Write data `dddd` to register with address `aaaaaaaa` of chip `1` |
 | `...` | `...` | `...` |
-| `0x88` | `aaaaaaaa dddd` | Write data `dddd` to register with address `aaaaaaaa` of chip `7` |
-| `0x90` | `cc... aaaaaaaa dddddddd` | Write data `dddddddd` to register with address `aaaaaaaa` of chip `cc...` |
-| `0x91` | `aaaaaaaa dddddddd` | Write data `dddddddd` to register with address `aaaaaaaa` of chip `0` |
-| `0x92` | `aaaaaaaa dddddddd` | Write data `dddddddd` to register with address `aaaaaaaa` of chip `1` |
+| `0x88` | `cc... aaaaaaaa dddd` | Write data `dddd` to register with address `aaaaaaaa` of chip `cc...` |
+| `0x90` | `aaaaaaaa dddddddd` | Write data `dddddddd` to register with address `aaaaaaaa` of chip `0` |
+| `0x91` | `aaaaaaaa dddddddd` | Write data `dddddddd` to register with address `aaaaaaaa` of chip `1` |
 | `...` | `...` | `...` |
-| `0x98` | `aaaaaaaa dddddddd` | Write data `dddddddd` to register with address `aaaaaaaa` of chip `7` |
+| `0x98` | `cc... aaaaaaaa dddddddd` | Write data `dddddddd` to register with address `aaaaaaaa` of chip `cc...` |
 | `0xan` |  | wait `n+1` samples, `n` can range from 0 to 15 |
 | `0xb0` |  | PCM stream manipulation (see below) |
 
@@ -306,7 +255,7 @@ Set stream data:
 ````
 B0 02 ss ss ii ii ii ii ll oo oo oo oo
 ````
-`ss ss` is stream number (not the number which is index in PCM stream block! it is like this so you can do e.g. interleaved writes from the same data section), `ii ii ii ii` is PCM writes block index, `ll` is step (1 if you just go byte by byte, 2 if you skip every other byte etc.), `oo oo oo oo` is an offset in the PCM write array from which playback will start.
+`ss ss` is stream number, `ii ii ii ii` is PCM writes block index, `ll` is step (1 if you just go byte by byte, 2 if you skip every other byte etc.), `oo oo oo oo` is an offset in the PCM write array from which playback will start.
 
 Set stream frequency:
 ````
@@ -322,8 +271,8 @@ B0 04 ss ss cc
 ````
 (bit 0 is LSB, bit 7 is MSB)
 bit 0 - if we ignore loop points
-bit 1 - loop (loop points not valid here)
-bit 2 - ping-pong loop (loop points not valid here)
+bit 1 - if we loop from beginning to end (loop points not valid here; if bit is clear, no looping is happening)
+bit 2 - ping-pong loop
 bit 3 - play in reverse (loop points not valid here)
 ````
 
