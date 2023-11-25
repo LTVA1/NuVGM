@@ -362,4 +362,5 @@ Other opcodes:
 | Opcode | Operands | Description |
 | ------------- | ------------- | ------------- |
 | `0xf0` | `ll` | Marks begin or end of the loop. If `ll` is 0, it's loop begin, otherwise it means "loop to loop begin point `ll` times". Nested loops are possible. |
+| `0xf1` | `aa aa aa aa` | jump to absolute offset `aa aa aa aa` |
 | `0xff` |  | Halt (stop) playback |
