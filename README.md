@@ -199,7 +199,8 @@ Opcodes are described there:
 | ------------- | ------------- | ------------- |
 | `0x00` |  | NOP. Do nothing and immeditely go to next opcode |
 | `0x01` | `dddddddd bb cc.. oooooooo` | Write data block `dddddddd` to ROM/RAM "unit" `bb` of chip `cc..` with starting offset `oooooooo` (for ROM it is used on the init phase so we can fill ROM with only the required data instead of storing the whole ROM image) |
-| `0x02` | `tt...` | Wait `tt...` samples |
+| `0x02` | `bb cc..` | (only for banking) enable ROM/RAM "unit" `bb` for chip `cc...` (make chip use the bank `bb`, if you will) |
+| `0x03` | `tt...` | Wait `tt...` samples |
 | `0x10` | `aa dd` | Write data `dd` to register with address `aa` of chip `0` |
 | `0x11` | `aa dd` | Write data `dd` to register with address `aa` of chip `1` |
 | `...` | `...` | `...` |
