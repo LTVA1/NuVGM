@@ -24,7 +24,7 @@ my proposal for a successor to VGM (i'd call it NuVGM (thanks Iyatemu for the na
 
 # More thoughts by me
 
-The UTF-8 opcodes idea is great, however, I have discussed the idea of block writes:
+The UTF-8 opcodes idea is great (however, I replaced it with just VLQ encoding), however, I have discussed the idea of block writes:
 ````
 block header with chip id
 address data
@@ -64,7 +64,7 @@ The file may have optional zlib compression.
 | GD3 offset  | `uint32_t` | 4 | relative; things like music engine Hz rate, song/album cover, author, jump table for playlist if all the OST is stored inside one file etc. can be stored there idk |
 | № of samples | `uint32_t` | 4 | total number of samples (sum of all wait commands) |
 | File playback tick rate | `uint32_t` | 4 | For wait commands etc. |
-| NuVGM data offset | `uint32_t` | 4 | absolute offset to the start of actual data (?? maybe unnecessary?) |
+| NuVGM data offset | `uint32_t` | 4 | absolute offset to the start of actual data |
 
 Blocks of data follow.
 
@@ -227,7 +227,7 @@ In the main logged data block there is a stream of commands. Each command has an
 
 Opcode operands are given in "nibble-notation". For example, if opcode operands are `aa pp dddd xy zzzzzzzz`, this means that `aa` is 8-bit value, as well as `pp`, `dddd` is 16-bit value, `xy` byte holds two parameters, `x` and `y`, which occupy their respective nibbles, and `zzzzzzzz` is 32-bit value.
 
-A special case is `aa...` operand. If written like this, it means that this field (`aa`) is UTF-8 standard "symbol" which Unicode code point is actually a value, so it has variable length (1-4 bytes, see UTF-8 standard).
+A special case is `aa...` operand. If written like this, it means that this field (`aa`) is VLQ standard code value (see [spec](https://en.wikipedia.org/wiki/Variable-length_quantity)).
 
 There are some shortened opcodes for chips with indices 0 to 7. These are introduced because they are expected to be the most common ones, and shaving one byte off them can noticeably reduce file size.
 
@@ -351,6 +351,7 @@ B0 08 ss ss mm
 ````
 `ss ss` is stream number, `ll ll ll ll` is loop mode:
 ````
+(bit 0 is LSB, bit 7 is MSB)
 0 = no loop
 1 = normal loop
 2 = ping-pong loop
