@@ -1,5 +1,10 @@
 # NuVGM
 A humble attempt to fix the issues of VGM file format...
+
+**IMPORTANT!!!** I have no time nor programming skill and experience to implement the format in steady and nice fashion in some player app reference implementation (don't forget that a ripper is also needed). If smb could help with app and a playback library for others to use, it would be great.
+
+If the format gets traction, though, I promise to implement Furnace tracker export routine with all the optimizations.
+
 # Original ideas by tildearrow
 my proposal for a successor to VGM (i'd call it NuVGM (thanks Iyatemu for the name idea), but feel free to use any name):
 - a "list of chips". every chip has a few fields: type, clock rate, volume, panning, parameter length and parameters (parameters which are not recognized by a player which only supports an old version of NuVGM are ignored)
@@ -312,3 +317,17 @@ Other opcodes:
 | `0xf0` | `ll` | Marks begin or end of the loop. If `ll` is 0, it's loop begin, otherwise it means "loop to loop begin point `ll` times". Nested loops are possible. |
 | `0xf1` | `aa aa aa aa` | jump to absolute offset `aa aa aa aa` |
 | `0xff` |  | Halt (stop) playback |
+
+# Future plans
+
+Afaik many songs are structured in a way that uses instruments, them being a repeating initialization of registers. This is particularly obvious with FM chips like OPNx/OPM, there even exist some programs to rip the patches from VGM files afaik.
+
+Thus we have a repeating initialization of the same registers (or registers on different channel with the same instrument... Some chips even have the register set for only one channel and switch them via special register... doesn't differ a lot actually) over and over. This leads to the idea of two new opcodes.
+
+`jsr` opcode would take an absolute address of the start of the subroutine and jump there. The execution would carry on until `rts` opcode is met. At the `rts` opcode the player jumps to the next opcode after the `jsr` it used to jump to subroutine. Nested subroutines would be possible.
+
+*jsr - **j**ump **s**ub**r**outine
+
+*rts - **r**e**t**urn from **s**ubroutine
+
+When exporting from the tracker, it (and loop opcode described earlier) would allow to optimize the file even more by just making an entire patterns subroutines. With trackers like Furnace tracker where order is a matrix it's not so easy, but repeating matrix rows could be encoded like this too.
